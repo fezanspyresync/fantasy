@@ -128,18 +128,12 @@ const PrivateChat = () => {
             item.data(),
           );
 
-          // updating scene messages
-          firestore()
-            .collection('chat')
-            .doc('' + route.params.id + route.params.data.name)
-            .collection('messages')
-            .where(item.data().from, '==', route.params.data.name)
-            .get()
-            .then()
-            .update({
-              ...item.data(),
-              isMessageScene: true,
-            });
+          // updating scene messages if contact person is not present
+
+          if (isCurrentPersonInteractingMe) {
+          } else {
+            seenMessageHandler(item);
+          }
 
           return {...item.data()};
         });
@@ -148,6 +142,29 @@ const PrivateChat = () => {
 
     // return () => subscriber();
   }, []);
+
+  //seenMessageHandler
+  const seenMessageHandler = item => {
+    firestore()
+      .collection('chat')
+      .doc('' + route.params.id + route.params.data.name)
+      .collection('messages')
+      .where(item.data().to, '==', route.params.id)
+      .get()
+      .then(data => {
+        data.docs.map(valueObject => {
+          firestore()
+            .collection('chat')
+            .doc('' + route.params.id + route.params.data.name)
+            .collection('messages')
+            .doc(valueObject.id)
+            .update({
+              ...valueObject,
+              isMessageScene: true,
+            });
+        });
+      });
+  };
 
   //update interaction
   useEffect(() => {}, []);
