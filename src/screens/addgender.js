@@ -25,9 +25,12 @@ const Addgender = () => {
         userID: `anon${randomNenoSeconds}`,
         gender,
         image:
-          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRIodoRRAcrLqFgMvGcLqwFDo6CIQm7ldguJQ&usqp=CAU',
+          gender == 'female'
+            ? 'https://i.pinimg.com/736x/2b/ff/a2/2bffa2ba2a43533ed855d46916f70dae.jpg'
+            : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRi88CIQNMqnNgUokI1b30sv3Di18VoPNrbLw&usqp=CAU',
         isLive: true,
         connectedPerson: '',
+        isTyping: false,
       })
       .then(() => {
         navigation.navigate('home');

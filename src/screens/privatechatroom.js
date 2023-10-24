@@ -49,10 +49,30 @@ const PrivateChat = () => {
   const [isPersonAvailable, setIsPersonAvailable] = useState('');
   const [isCurrentPersonInteractingMe, setIsCurrentPersonInteractingMe] =
     useState('');
+  const [isPersonTyping, setIsPersonTyping] = useState('');
+  let typingTimeout;
 
   const messageHandler = msg => {
+    if (isCurrentPersonInteractingMe == route.params.id) {
+      firestore().collection('users').doc(route.params.id).update({
+        isTyping: true,
+      });
+
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        firestore().collection('users').doc(route.params.id).update({
+          isTyping: false,
+        });
+      }, 1000);
+    } else {
+      firestore().collection('users').doc(route.params.id).update({
+        isTyping: false,
+      });
+    }
     setMessage(msg);
   };
+
+  console.log('ysagdysadysafd', isPersonTyping);
 
   const messageSubmitHandler = async (image = '', video = '') => {
     // const user = await AsyncStorage.getItem('user');
@@ -69,8 +89,7 @@ const PrivateChat = () => {
         isMessageScene:
           isCurrentPersonInteractingMe == route.params.id ? true : false,
       };
-      console.log('payload for video', payload);
-      console.log('reached');
+
       firestore()
         .collection('chats')
         .doc('' + route.params.id + route.params.data.name)
@@ -110,30 +129,19 @@ const PrivateChat = () => {
   };
   // getting all conversation
   useEffect(() => {
+    seenMessageHandler();
     const subscriber = firestore()
       .collection('chats')
       .doc('' + route.params.id + route.params.data.name)
       .collection('messages')
       .orderBy('timeStamp', 'asc')
       .onSnapshot(querySnapShot => {
-        // console.log(
-        //   '--------------asdasdasd----------------',
-        //   querySnapShot.docs[3].data(),
-        // );
+        // if (isCurrentPersonInteractingMe == route.params.data.name) {
+        //   seenMessageHandler();
+        // }
+
         const allMessages = querySnapShot.docs.map(item => {
-          console.log(
-            'sadfashtfdxxxxxxxxxxxxxxxxxxxxxtsad',
-            'iddddddddddd',
-            item.id,
-            item.data(),
-          );
-
           // updating scene messages if contact person is not present
-
-          if (isCurrentPersonInteractingMe) {
-          } else {
-            seenMessageHandler(item);
-          }
 
           return {...item.data()};
         });
@@ -143,24 +151,64 @@ const PrivateChat = () => {
     // return () => subscriber();
   }, []);
 
+  useEffect(() => {
+    seenMessageHandler();
+  }, []);
+
   //seenMessageHandler
   const seenMessageHandler = item => {
+    // Update messages where 'to' is equal to route.params.id
     firestore()
-      .collection('chat')
+      .collection('chats')
+      .doc('' + route.params.data.name + route.params.id)
+      .collection('messages')
+      .where('to', '==', route.params.id)
+      .get()
+      .then(querySnapshot => {
+        querySnapshot.forEach(doc => {
+          // Update the document with the new 'isMessageScene' field
+          console.log('doccccccccccccccccccccc', doc.id);
+          firestore()
+            .collection('chats')
+            .doc('' + route.params.data.name + route.params.id)
+            .collection('messages')
+            .doc(doc.id)
+            .update({
+              isMessageScene: true, // Update the 'isMessageScene' field
+            })
+            .then(() => {
+              console.log('Message marked as read');
+            })
+            .catch(error => {
+              console.log('Error while updating message', error);
+            });
+        });
+      });
+
+    //update from myList
+    // Update messages where 'to' is equal to route.params.id
+    firestore()
+      .collection('chats')
       .doc('' + route.params.id + route.params.data.name)
       .collection('messages')
-      .where(item.data().to, '==', route.params.id)
+      .where('to', '==', route.params.id)
       .get()
-      .then(data => {
-        data.docs.map(valueObject => {
+      .then(querySnapshot => {
+        querySnapshot.forEach(doc => {
+          // Update the document with the new 'isMessageScene' field
           firestore()
-            .collection('chat')
+            .collection('chats')
             .doc('' + route.params.id + route.params.data.name)
             .collection('messages')
-            .doc(valueObject.id)
+            .doc(doc.id)
             .update({
-              ...valueObject,
-              isMessageScene: true,
+              isMessageScene: true, // Update the 'isMessageScene' field
+            })
+            .then(() => {
+              console.log('Message marked as read');
+            })
+            .catch(error => {
+              console.log('Error while updating message', error);
             });
         });
       });
@@ -182,6 +230,7 @@ const PrivateChat = () => {
           );
           setIsPersonAvailable(filter[0].isLive);
           setIsCurrentPersonInteractingMe(filter[0].connectedPerson);
+          setIsPersonTyping(filter[0].isTyping);
 
           // setAllUsers(filter);
         });
@@ -224,16 +273,10 @@ const PrivateChat = () => {
         .update({
           connectedPerson: '',
         })
-        .then(() => {
-          console.log('interAction has been clear');
-        })
-        .catch(error => {
-          console.log('error while clearing interAction');
-        });
+        .then(() => {})
+        .catch(error => {});
     };
   }, []);
-
-  console.log('current user', route.params.id);
 
   // // useEffect(() => {
   // //   async function getCurrentMessages() {
@@ -253,21 +296,15 @@ const PrivateChat = () => {
   // //   };
   // // }, [isFocus, socket]);
 
-  console.log('all', result);
-
   const requestPermissions = async () => {
     try {
       const status = await request(PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE);
 
       if (status === 'granted') {
-        console.log('Permission granted');
         pickDocument();
       } else {
-        console.log('Permission denied');
       }
-    } catch (error) {
-      console.error('Error requesting permission:', error);
-    }
+    } catch (error) {}
   };
   const pickDocument = async () => {
     try {
@@ -279,15 +316,12 @@ const PrivateChat = () => {
         ],
       });
 
-      console.log('Picked document data:', result);
-
       if (result.length > 0) {
         const mimeType = result[0].type;
 
         if (mimeType.startsWith('video/')) {
           // Handle video upload
           const path = result[0].uri;
-          console.log('Video path:', path);
 
           const res = await RNFetchBlob.fs.readFile(path, 'base64');
           const blobData = `data:${mimeType};base64,${res}`;
@@ -299,7 +333,7 @@ const PrivateChat = () => {
           await reference.putString(blobData, 'data_url');
 
           const videoUrl = await storage().ref(filename).getDownloadURL();
-          console.log('Video URL:', videoUrl);
+
           // setVideo(videoUrl);
           messageSubmitHandler(undefined, videoUrl);
 
@@ -307,7 +341,7 @@ const PrivateChat = () => {
         } else if (mimeType.startsWith('image/')) {
           // Handle video upload
           const path = result[0].uri;
-          console.log('image path:', path);
+
           const res = await RNFetchBlob.fs.readFile(path, 'base64');
           const blobData = `data:${mimeType};base64,${res}`;
 
@@ -318,7 +352,7 @@ const PrivateChat = () => {
           await reference.putString(blobData, 'data_url');
 
           const ImageUrl = await storage().ref(filename).getDownloadURL();
-          console.log('image URL:', ImageUrl);
+
           // setImage(ImageUrl);
           messageSubmitHandler(ImageUrl, undefined);
           // Handle image upload
@@ -326,15 +360,12 @@ const PrivateChat = () => {
         } else if (mimeType.startsWith('application/')) {
           if (result[0].size == 115924) {
             try {
-              console.log('handler pdf', result);
               // Handle video upload
               const path = result[0].uri;
-              console.log('pdf path:', path);
 
               const res = await RNFetchBlob.fs.readFile(path, 'base64');
               const blobData = `data:${mimeType};base64,${res}`;
 
-              console.log('reached');
               const filename =
                 new Date().getTime() +
                 `.${mimeType.replace('application/', '')}`;
@@ -343,26 +374,19 @@ const PrivateChat = () => {
               await reference.putString(blobData, 'data_url');
 
               const videoUrl = await storage().ref(filename).getDownloadURL();
-              console.log('pdf URL:', videoUrl);
-            } catch (error) {
-              console.log(error);
-            }
+            } catch (error) {}
           } else {
-            console.log('size is increased');
           }
         } else {
-          console.log('unsupported');
         }
       }
     } catch (err) {
       if (DocumentPicker.isCancel(err)) {
-        console.log('User cancelled the picker');
       } else {
-        console.error('Error picking document:', err);
       }
     }
   };
-  console.log('ansdas', isPersonAvailable);
+
   return (
     <View style={styles.container}>
       <View style={styles.messsageOverAllContainer}>
@@ -417,7 +441,7 @@ const PrivateChat = () => {
                         padding: 10,
 
                         overflow: item.image || item.video ? 'hidden' : null,
-                        borderRadius: 20,
+                        borderRadius: 4,
                         backgroundColor:
                           item.from == route.params.id
                             ? colors.mainColor
@@ -466,20 +490,22 @@ const PrivateChat = () => {
 
                     <Text
                       style={{
-                        color: 'white',
-                        position: 'absolute',
-                        right: 20,
-                        bottom: 1,
-                        fontSize: 8,
+                        color: '#000',
+                        // position: 'absolute',
+                        // right: 20,
+                        // bottom: 1,
+                        textAlign: 'right',
+                        fontSize: 12,
                       }}>
-                      {item.mesageSendTime +
-                        `${
-                          item.from == route.params.id
-                            ? item.isMessageScene
-                              ? 's'
-                              : 'd'
-                            : ''
-                        }`}
+                      {item.mesageSendTime}
+                    </Text>
+                    <Text
+                      style={{textAlign: 'right', fontSize: 12, color: '#000'}}>
+                      {item.from == route.params.id
+                        ? item.isMessageScene
+                          ? 'seen'
+                          : 'deliever'
+                        : ''}
                     </Text>
                     {item.video || item.image ? (
                       <TouchableOpacity
@@ -514,9 +540,13 @@ const PrivateChat = () => {
         />
         <View>
           <Text style={styles.receiverName}>{route.params.data.name}</Text>
-          <Text style={styles.receiverName}>
-            {isPersonAvailable ? 'Online' : 'offline'}
-          </Text>
+          {isPersonTyping ? (
+            <Text style={styles.receiverName}>typing...</Text>
+          ) : (
+            <Text style={styles.receiverName}>
+              {isPersonAvailable ? 'Online' : 'offline'}
+            </Text>
+          )}
         </View>
       </View>
     </View>

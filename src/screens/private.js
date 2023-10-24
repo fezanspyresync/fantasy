@@ -82,7 +82,6 @@ const Private = () => {
     navigation.navigate('privateChat', receiverdata);
   };
 
-  console.log('chat screen users', allUsers);
   return (
     <View style={styles.container}>
       {allUsers.length > 0 && (
