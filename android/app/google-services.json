@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "147439035111",
+    "project_id": "fantasy-87d78",
+    "storage_bucket": "fantasy-87d78.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:147439035111:android:d671b9f7622ed776ceb842",
+        "android_client_info": {
+          "package_name": "com.fantasy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSUI9paP9W1Ar5PYOLpxB7OqCqL1OYbFM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
