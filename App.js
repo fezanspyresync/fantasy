@@ -1,5 +1,5 @@
-import React, {useEffect} from 'react';
-import {NavigationContainer, useIsFocused} from '@react-navigation/native';
+import React, {useEffect, useRef, useState} from 'react';
+import {NavigationContainer} from '@react-navigation/native';
 
 import Splash from './src/screens/splash';
 import Addname from './src/screens/addname';
@@ -11,17 +11,77 @@ import PrivateChat from './src/screens/privatechatroom';
 import Displaymedia from './src/screens/displaymedia';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {socket} from '.';
+import firestore from '@react-native-firebase/firestore';
+import {AppState} from 'react-native';
+import {Provider, useDispatch, useSelector} from 'react-redux';
+import store from './src/store/store';
+import {isOnline} from './src/store/slice';
 const Stack = createStackNavigator();
 
 function App() {
-  // useEffect(() => {
-  //   return async function () {
-  //     const user = await AsyncStorage.getItem('user');
-  //     if (user) {
-  //       socket.emit('currentUserOffline', {user, isLive: false});
-  //     }
-  //   };
-  // }, []);
+  const appState = useRef(AppState.currentState);
+  const [appStateVisible, setAppStateVisible] = useState(appState.current);
+  const dispatch = useDispatch();
+
+  console.log('uashduasdhuadghuasduyasuydgasdgasuygduyasgduyasgu', isOnline);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      'change',
+      async nextAppState => {
+        if (nextAppState === 'active') {
+          console.log('App has come to the foreground!');
+          const user = await AsyncStorage.getItem('user');
+          if (user) {
+            firestore()
+              .collection('users')
+              .doc(user)
+              .update({
+                isLive: true,
+              })
+              .then(() => {
+                console.log('User is online!');
+                dispatch(isOnline(true));
+              })
+              .catch(error => {
+                console.log('error while online');
+              });
+          }
+        } else if (
+          nextAppState === 'inactive' ||
+          nextAppState === 'background'
+        ) {
+          console.log('App is being killed or terminated!');
+          // Place your "kill" state logic here
+          const user = await AsyncStorage.getItem('user');
+          if (user) {
+            firestore()
+              .collection('users')
+              .doc(user)
+              .update({
+                isLive: false,
+              })
+              .then(() => {
+                console.log('User is offline!');
+                dispatch(isOnline(false));
+              })
+              .catch(error => {
+                console.log('error while offline');
+              });
+          }
+        }
+
+        appState.current = nextAppState;
+        setAppStateVisible(appState.current);
+        console.log('AppState', appState.current);
+      },
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator>

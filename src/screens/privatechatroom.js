@@ -10,7 +10,7 @@ import {
   StatusBar,
   Tab,
 } from 'react-native';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useIsFocused, useNavigation, useRoute} from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -27,10 +27,11 @@ import {Immersive} from 'react-native-immersive';
 import VideoPlayer from 'react-native-video-player';
 import Modal from 'react-native-modal';
 import Feather from 'react-native-vector-icons/Feather';
-import firestore from '@react-native-firebase/firestore';
+import firestore, {firebase} from '@react-native-firebase/firestore';
 import {PERMISSIONS, request} from 'react-native-permissions';
 import DocumentPicker from 'react-native-document-picker';
 import RNFetchBlob from 'react-native-fetch-blob';
+import storage from '@react-native-firebase/storage';
 
 const PrivateChat = () => {
   // const {name, image, isLive} = route.params;
@@ -43,21 +44,32 @@ const PrivateChat = () => {
 
   const [result, setResult] = useState([]);
   const [currentUser, setCurrentUser] = useState('');
+  const [video, setVideo] = useState('');
+  const [image, setImage] = useState('');
+  const [isPersonAvailable, setIsPersonAvailable] = useState('');
+  const [isCurrentPersonInteractingMe, setIsCurrentPersonInteractingMe] =
+    useState('');
 
   const messageHandler = msg => {
     setMessage(msg);
   };
 
-  const messageSubmitHandler = async () => {
+  const messageSubmitHandler = async (image = '', video = '') => {
     // const user = await AsyncStorage.getItem('user');
-    if (message) {
+
+    if (message || image || video) {
       const payload = {
         from: route.params.id,
         to: route.params.data.name,
+        video,
+        image,
         message,
         timeStamp: new Date().getTime(),
         mesageSendTime: moment().format('LT'),
+        isMessageScene:
+          isCurrentPersonInteractingMe == route.params.id ? true : false,
       };
+      console.log('payload for video', payload);
       console.log('reached');
       firestore()
         .collection('chats')
@@ -86,6 +98,8 @@ const PrivateChat = () => {
       // socket.emit('sendPrivateMessage', payload, name);
 
       setMessage('');
+      setVideo('');
+      setImage('');
     }
   };
   const backHandler = () => {
@@ -94,7 +108,7 @@ const PrivateChat = () => {
   const displayMediaHandler = media => {
     navigation.navigate('displaymedia', media);
   };
-
+  // getting all conversation
   useEffect(() => {
     const subscriber = firestore()
       .collection('chats')
@@ -102,21 +116,105 @@ const PrivateChat = () => {
       .collection('messages')
       .orderBy('timeStamp', 'asc')
       .onSnapshot(querySnapShot => {
-        console.log(
-          '--------------asdasdasd----------------',
-          querySnapShot.docs[3].data(),
-        );
+        // console.log(
+        //   '--------------asdasdasd----------------',
+        //   querySnapShot.docs[3].data(),
+        // );
         const allMessages = querySnapShot.docs.map(item => {
-          console.log('sadfashtfdxxxxxxxxxxxxxxxxxxxxxtsad', item.data());
+          console.log(
+            'sadfashtfdxxxxxxxxxxxxxxxxxxxxxtsad',
+            'iddddddddddd',
+            item.id,
+            item.data(),
+          );
+
+          // updating scene messages
+          firestore()
+            .collection('chat')
+            .doc('' + route.params.id + route.params.data.name)
+            .collection('messages')
+            .where(item.data().from, '==', route.params.data.name)
+            .get()
+            .then()
+            .update({
+              ...item.data(),
+              isMessageScene: true,
+            });
+
           return {...item.data()};
         });
         setResult(allMessages);
-        console.log('is called again');
       });
 
     // return () => subscriber();
   }, []);
-  useEffect(() => {});
+
+  //update interaction
+  useEffect(() => {}, []);
+  // get interacted person status
+  useEffect(() => {
+    async function getCurrentUserStatus() {
+      const subscriber = firestore()
+        .collection('users')
+        .onSnapshot(querySnapShot => {
+          const allUsers = querySnapShot.docs.map(item => {
+            return {...item.data()};
+          });
+          const filter = allUsers.filter(
+            data => data.name == route.params.data.name,
+          );
+          setIsPersonAvailable(filter[0].isLive);
+          setIsCurrentPersonInteractingMe(filter[0].connectedPerson);
+
+          // setAllUsers(filter);
+        });
+    }
+    getCurrentUserStatus();
+    // async function getCurrentReceiver() {
+    //   const user = firestore()
+    //     .collection('users')
+    //     .doc(route.params.data.name)
+    //     .get()
+    //     .then(data => {
+    //       console.log('ugfuygfuyds', data.data().isLive);
+    //       setIsPersonAvailable(data.data().isLive);
+    //     });
+    // }
+    // getCurrentReceiver();
+
+    // firestore()
+    //   .collection('users')
+    //   .where('name', '!=', userName)
+    //   .get()
+    //   .then(res => {
+    //     console.log('========<<<<<>>>>>>>>>>>', res.docs[0].data());
+    //     // setAllUsers(JSON.stringify(res.docs));
+    //     if (res.docs.length !== 0) {
+    //       const getData = res.docs.map(data => data.data());
+    //       setAllUsers(getData);
+    //     }
+    //   })
+    //   .catch(error => {
+    //     console.log('===============>', error);
+    //   });
+  }, []);
+  //disConnect person
+  useEffect(() => {
+    return () => {
+      firestore()
+        .collection('users')
+        .doc(route.params.id)
+        .update({
+          connectedPerson: '',
+        })
+        .then(() => {
+          console.log('interAction has been clear');
+        })
+        .catch(error => {
+          console.log('error while clearing interAction');
+        });
+    };
+  }, []);
 
   console.log('current user', route.params.id);
 
@@ -160,7 +258,7 @@ const PrivateChat = () => {
         type: [
           DocumentPicker.types.video,
           DocumentPicker.types.images,
-          DocumentPicker.types.pdf,
+          // DocumentPicker.types.pdf,
         ],
       });
 
@@ -185,6 +283,9 @@ const PrivateChat = () => {
 
           const videoUrl = await storage().ref(filename).getDownloadURL();
           console.log('Video URL:', videoUrl);
+          // setVideo(videoUrl);
+          messageSubmitHandler(undefined, videoUrl);
+
           // You can do further processing or set the video URL as needed
         } else if (mimeType.startsWith('image/')) {
           // Handle video upload
@@ -199,8 +300,10 @@ const PrivateChat = () => {
 
           await reference.putString(blobData, 'data_url');
 
-          const videoUrl = await storage().ref(filename).getDownloadURL();
-          console.log('image URL:', videoUrl);
+          const ImageUrl = await storage().ref(filename).getDownloadURL();
+          console.log('image URL:', ImageUrl);
+          // setImage(ImageUrl);
+          messageSubmitHandler(ImageUrl, undefined);
           // Handle image upload
           // You can add your image handling logic here
         } else if (mimeType.startsWith('application/')) {
@@ -242,7 +345,7 @@ const PrivateChat = () => {
       }
     }
   };
-
+  console.log('ansdas', isPersonAvailable);
   return (
     <View style={styles.container}>
       <View style={styles.messsageOverAllContainer}>
@@ -266,9 +369,7 @@ const PrivateChat = () => {
         <TouchableOpacity
           style={styles.sendContainer}
           onPress={() => messageSubmitHandler()}>
-          {message == '' ? (
-            <Feather name="mic" size={30} color={'white'} />
-          ) : (
+          {message == '' && (
             <MaterialIcons name="send" size={30} color={'white'} />
           )}
         </TouchableOpacity>
@@ -354,7 +455,14 @@ const PrivateChat = () => {
                         bottom: 1,
                         fontSize: 8,
                       }}>
-                      {item.mesageSendTime}
+                      {item.mesageSendTime +
+                        `${
+                          item.from == route.params.id
+                            ? item.isMessageScene
+                              ? 's'
+                              : 'd'
+                            : ''
+                        }`}
                     </Text>
                     {item.video || item.image ? (
                       <TouchableOpacity
@@ -389,9 +497,9 @@ const PrivateChat = () => {
         />
         <View>
           <Text style={styles.receiverName}>{route.params.data.name}</Text>
-          {/* <Text style={styles.receiverName}>
-            {isLive ? 'Online' : 'offline'}
-          </Text> */}
+          <Text style={styles.receiverName}>
+            {isPersonAvailable ? 'Online' : 'offline'}
+          </Text>
         </View>
       </View>
     </View>

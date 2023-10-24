@@ -33,27 +33,52 @@ const Private = () => {
   const getAllUsers = async () => {
     const userName = await AsyncStorage.getItem('user');
     id = userName;
-    firestore()
+    // firestore()
+    //   .collection('users')
+    //   .where('name', '!=', userName)
+    //   .get()
+    //   .then(res => {
+    //     console.log('========<<<<<>>>>>>>>>>>', res.docs[0].data());
+    //     // setAllUsers(JSON.stringify(res.docs));
+    //     if (res.docs.length !== 0) {
+    //       const getData = res.docs.map(data => data.data());
+    //       setAllUsers(getData);
+    //     }
+    //   })
+    //   .catch(error => {
+    //     console.log('===============>', error);
+    //   });
+
+    const subscriber = firestore()
       .collection('users')
-      .where('name', '!=', userName)
-      .get()
-      .then(res => {
-        console.log('========<<<<<>>>>>>>>>>>', res.docs[0].data());
-        // setAllUsers(JSON.stringify(res.docs));
-        if (res.docs.length !== 0) {
-          const getData = res.docs.map(data => data.data());
-          setAllUsers(getData);
-        }
-      })
-      .catch(error => {
-        console.log('===============>', error);
+      .onSnapshot(querySnapShot => {
+        const allUsers = querySnapShot.docs.map(item => {
+          return {...item.data()};
+        });
+        const filter = allUsers.filter(data => data.name !== userName);
+
+        setAllUsers(filter);
       });
   };
 
   // socket.on('getAllUsers', allRegisterUsers => {
   //   setAllUsers(allRegisterUsers);
   // });
+
+  //navigate to interActed Person
   const PrivateChat = receiverdata => {
+    firestore()
+      .collection('users')
+      .doc(receiverdata.id)
+      .update({
+        connectedPerson: receiverdata.data.name,
+      })
+      .then(() => {
+        console.log('interAction has been done');
+      })
+      .catch(error => {
+        console.log('error while interAction');
+      });
     navigation.navigate('privateChat', receiverdata);
   };
 
