@@ -107,6 +107,30 @@ const Private = () => {
                 </View>
                 <View style={styles.userInfo}>
                   <Text style={styles.userInfoColor}>{item.name}</Text>
+                  {item?.pendingMessages?.filter(data => data.receiver == id)
+                    .length > 0 && (
+                    <View
+                      style={{
+                        backgroundColor: 'blue',
+                        marginRight: 5,
+                        borderWidth: 1,
+                        borderRadius: 20,
+                        alignSelf: 'center',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: 1,
+                        minHeight: 30,
+                        minWidth: 30,
+                      }}>
+                      <Text style={{color: 'white'}}>
+                        {
+                          item?.pendingMessages?.filter(
+                            data => data.receiver == id,
+                          )[0]?.totalMessages
+                        }
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </TouchableOpacity>
             );
@@ -143,6 +167,11 @@ const styles = StyleSheet.create({
   userInfo: {
     paddingTop: heightPercentageToDP(1),
     marginLeft: widthPercentageToDP(2),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    // backgroundColor: 'red',
+    flex: 1,
   },
   userInfoColor: {
     color: '#000',

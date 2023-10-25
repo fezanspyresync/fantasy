@@ -32,6 +32,7 @@ import {PERMISSIONS, request} from 'react-native-permissions';
 import DocumentPicker from 'react-native-document-picker';
 import RNFetchBlob from 'react-native-fetch-blob';
 import storage from '@react-native-firebase/storage';
+import {remove} from '@amplitude/analytics-react-native';
 
 const PrivateChat = () => {
   // const {name, image, isLive} = route.params;
@@ -47,13 +48,18 @@ const PrivateChat = () => {
   const [video, setVideo] = useState('');
   const [image, setImage] = useState('');
   const [isPersonAvailable, setIsPersonAvailable] = useState('');
+  const [personalInfo, setPersonalInfo] = useState([]);
   const [isCurrentPersonInteractingMe, setIsCurrentPersonInteractingMe] =
     useState('');
   const [isPersonTyping, setIsPersonTyping] = useState('');
   let typingTimeout;
-
+  // let pendingMessageCounter = 0;
+  const [pendingMessageCounter, setPendingMessageCounter] = useState(0);
   const messageHandler = msg => {
-    if (isCurrentPersonInteractingMe == route.params.id) {
+    if (
+      isCurrentPersonInteractingMe == route.params.id &&
+      isPersonAvailable == true
+    ) {
       firestore().collection('users').doc(route.params.id).update({
         isTyping: true,
       });
@@ -65,6 +71,7 @@ const PrivateChat = () => {
         });
       }, 1000);
     } else {
+      // pendingMessageCounter=pendingMessageCounter
       firestore().collection('users').doc(route.params.id).update({
         isTyping: false,
       });
@@ -87,8 +94,47 @@ const PrivateChat = () => {
         timeStamp: new Date().getTime(),
         mesageSendTime: moment().format('LT'),
         isMessageScene:
-          isCurrentPersonInteractingMe == route.params.id ? true : false,
+          isCurrentPersonInteractingMe == route.params.id &&
+          isPersonAvailable == true
+            ? true
+            : false,
       };
+      //working on pending messages
+      if (isCurrentPersonInteractingMe !== route.params.id) {
+        if (personalInfo[0].pendingMessages.length > 0) {
+          const filterMyMessages = personalInfo[0].pendingMessages.filter(
+            data => data.receiver == route.params.data.name,
+          );
+          if (filterMyMessages.length > 0) {
+            filterMyMessages[0].totalMessages = ++filterMyMessages[0]
+              .totalMessages;
+
+            firestore().collection('users').doc(route.params.id).update({
+              pendingMessages: personalInfo[0].pendingMessages,
+            });
+          } else {
+            const payload = {
+              receiver: route.params.data.name,
+              totalMessages: 1,
+            };
+            const addNewPerson = [...personalInfo[0].pendingMessages, payload];
+            firestore().collection('users').doc(route.params.id).update({
+              pendingMessages: addNewPerson,
+            });
+          }
+        } else {
+          const payload = {
+            receiver: route.params.data.name,
+            totalMessages: 1,
+          };
+          firestore()
+            .collection('users')
+            .doc(route.params.id)
+            .update({
+              pendingMessages: [payload],
+            });
+        }
+      }
 
       firestore()
         .collection('chats')
@@ -153,10 +199,28 @@ const PrivateChat = () => {
 
   useEffect(() => {
     seenMessageHandler();
-  }, []);
+  }, [isFocus]);
 
   //seenMessageHandler
   const seenMessageHandler = item => {
+    //remove pending messages
+    //remove something
+    console.log('fiushfiusdhfsfdufsuihdhf', route.params.data.pendingMessages);
+    if (route.params.data.pendingMessages.length > 0) {
+      const filterMyData = route.params.data?.pendingMessages.filter(
+        data => data.receiver == route.params.id,
+
+        console.log('asgduyasgduyasdyasg', filterMyData),
+      );
+      if (filterMyData.length > 0) {
+        const remove = route.params.data.pendingMessages.filter(
+          data => data.receiver !== route.params.id,
+        );
+        firestore().collection('users').doc(route.params.data.name).update({
+          pendingMessages: remove,
+        });
+      }
+    }
     // Update messages where 'to' is equal to route.params.id
     firestore()
       .collection('chats')
@@ -167,7 +231,6 @@ const PrivateChat = () => {
       .then(querySnapshot => {
         querySnapshot.forEach(doc => {
           // Update the document with the new 'isMessageScene' field
-          console.log('doccccccccccccccccccccc', doc.id);
           firestore()
             .collection('chats')
             .doc('' + route.params.data.name + route.params.id)
@@ -214,8 +277,20 @@ const PrivateChat = () => {
       });
   };
 
-  //update interaction
-  useEffect(() => {}, []);
+  //get my personal inf0
+  useEffect(() => {
+    firestore()
+      .collection('users')
+      .onSnapshot(querySnapShot => {
+        const allUsers = querySnapShot.docs.map(item => {
+          return {...item.data()};
+        });
+        const filter = allUsers.filter(data => data.name == route.params.id);
+
+        // setAllUsers(filter);
+        setPersonalInfo(filter);
+      });
+  }, []);
   // get interacted person status
   useEffect(() => {
     async function getCurrentUserStatus() {
@@ -425,13 +500,11 @@ const PrivateChat = () => {
                 <View
                   style={{
                     margin: 10,
+
                     alignItems:
                       item.from == route.params.id ? 'flex-end' : 'flex-start',
                   }}>
                   <TouchableOpacity
-                    onPress={() => {
-                      toggleFullscreen;
-                    }}
                     style={[
                       {
                         //   minHeight: 20,

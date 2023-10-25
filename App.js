@@ -60,6 +60,7 @@ function App() {
               .doc(user)
               .update({
                 isLive: false,
+                connectedPerson: '',
               })
               .then(() => {
                 console.log('User is offline!');

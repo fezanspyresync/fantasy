@@ -31,9 +31,10 @@ const Addgender = () => {
         isLive: true,
         connectedPerson: '',
         isTyping: false,
+        pendingMessages: [],
       })
       .then(() => {
-        navigation.navigate('home');
+        navigation.replace('home');
       })
       .catch(error => {
         console.log(error);
