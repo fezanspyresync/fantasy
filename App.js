@@ -12,10 +12,12 @@ import Displaymedia from './src/screens/displaymedia';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {socket} from '.';
 import firestore from '@react-native-firebase/firestore';
-import {AppState} from 'react-native';
+import {Alert, AppState} from 'react-native';
 import {Provider, useDispatch, useSelector} from 'react-redux';
 import store from './src/store/store';
 import {isOnline} from './src/store/slice';
+import messaging from '@react-native-firebase/messaging';
+
 const Stack = createStackNavigator();
 
 function App() {
@@ -77,6 +79,18 @@ function App() {
         console.log('AppState', appState.current);
       },
     );
+    //FCM HANDLER
+    try {
+      const unsubscribe = messaging().onMessage(async remoteMessage => {
+        console.log(
+          'A new FCM message arrived!',
+          JSON.stringify(remoteMessage),
+        );
+      });
+      console.log('foreground messages', unsubscribe);
+    } catch (error) {
+      console.log(error);
+    }
 
     return () => {
       subscription.remove();

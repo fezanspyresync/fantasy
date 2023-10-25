@@ -110,6 +110,7 @@ dependencies {
     implementation "androidx.appcompat:appcompat:1.0.0"
     implementation project(':react-native-immersive')
     implementation project(':react-native-audio-recorder-player')
+    implementation project(':react-native-push-notification')
     
     debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}")
     debugImplementation("com.facebook.flipper:flipper-network-plugin:${FLIPPER_VERSION}") {

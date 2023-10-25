@@ -1,9 +1,10 @@
 import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
-import React from 'react';
+import React, {useEffect} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import {socket} from '../..';
 import firestore from '@react-native-firebase/firestore';
+import {requestUserPermission} from '../constants/FCM';
 
 const Addgender = () => {
   const navigation = useNavigation();
@@ -14,6 +15,7 @@ const Addgender = () => {
   }
 
   const enterInRoom = async gender => {
+    const token = await AsyncStorage.getItem('token');
     const randomNenoSeconds = generateRandomNenoSeconds();
     await AsyncStorage.setItem('user', `anon${randomNenoSeconds}`);
     // socket.emit('createuser', `anon${randomNenoSeconds}`, gender);
@@ -32,6 +34,7 @@ const Addgender = () => {
         connectedPerson: '',
         isTyping: false,
         pendingMessages: [],
+        token,
       })
       .then(() => {
         navigation.replace('home');
@@ -40,6 +43,9 @@ const Addgender = () => {
         console.log(error);
       });
   };
+  useEffect(() => {
+    requestUserPermission();
+  }, []);
   return (
     <View style={styles.container}>
       <View style={styles.imagesContainer}>
