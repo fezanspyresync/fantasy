@@ -10,7 +10,13 @@ import {
   StatusBar,
   Tab,
 } from 'react-native';
-import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useIsFocused, useNavigation, useRoute} from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -33,6 +39,7 @@ import DocumentPicker from 'react-native-document-picker';
 import RNFetchBlob from 'react-native-fetch-blob';
 import storage from '@react-native-firebase/storage';
 import {remove} from '@amplitude/analytics-react-native';
+import {sendFCMMessage} from '../constants/FCM';
 
 const PrivateChat = () => {
   // const {name, image, isLive} = route.params;
@@ -55,6 +62,7 @@ const PrivateChat = () => {
   let typingTimeout;
   // let pendingMessageCounter = 0;
   const [pendingMessageCounter, setPendingMessageCounter] = useState(0);
+  const [ReceiverToken, setReceiverToken] = useState('');
   const messageHandler = msg => {
     if (
       isCurrentPersonInteractingMe == route.params.id &&
@@ -134,6 +142,10 @@ const PrivateChat = () => {
               pendingMessages: [payload],
             });
         }
+      }
+
+      if (!isPersonAvailable) {
+        sendFCMMessage(ReceiverToken, 'message', payload);
       }
 
       firestore()
@@ -306,6 +318,7 @@ const PrivateChat = () => {
           setIsPersonAvailable(filter[0].isLive);
           setIsCurrentPersonInteractingMe(filter[0].connectedPerson);
           setIsPersonTyping(filter[0].isTyping);
+          setReceiverToken(filter[0].token);
 
           // setAllUsers(filter);
         });
@@ -462,6 +475,11 @@ const PrivateChat = () => {
     }
   };
 
+  const isCurrentPersonWithme = useMemo(() => isCurrentPersonInteractingMe, []);
+
+  console.log('usememo is perfect are not', isCurrentPersonWithme);
+  console.log('usememo is perfect are not', isCurrentPersonInteractingMe);
+
   return (
     <View style={styles.container}>
       <View style={styles.messsageOverAllContainer}>
@@ -569,11 +587,17 @@ const PrivateChat = () => {
                         // bottom: 1,
                         textAlign: 'right',
                         fontSize: 12,
+                        zIndex: 100,
                       }}>
                       {item.mesageSendTime}
                     </Text>
                     <Text
-                      style={{textAlign: 'right', fontSize: 12, color: '#000'}}>
+                      style={{
+                        textAlign: 'right',
+                        zIndex: 100,
+                        fontSize: 12,
+                        color: '#000',
+                      }}>
                       {item.from == route.params.id
                         ? item.isMessageScene
                           ? 'seen'

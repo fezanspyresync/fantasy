@@ -22,6 +22,9 @@ export const socket = io.connect(baseurl);
 try {
   messaging().setBackgroundMessageHandler(async remoteMessage => {
     console.log('Message handled in the background!', remoteMessage);
+    // messaging().removeDeliveredNotification(
+    //   remoteMessage.notification.notificationId,
+    // );
   });
 } catch (error) {
   console.log(error);

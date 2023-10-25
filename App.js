@@ -49,11 +49,8 @@ function App() {
                 console.log('error while online');
               });
           }
-        } else if (
-          nextAppState === 'inactive' ||
-          nextAppState === 'background'
-        ) {
-          console.log('App is being killed or terminated!');
+        } else if (nextAppState === 'background') {
+          console.log('App is being in background');
           // Place your "kill" state logic here
           const user = await AsyncStorage.getItem('user');
           if (user) {
@@ -62,7 +59,7 @@ function App() {
               .doc(user)
               .update({
                 isLive: false,
-                connectedPerson: '',
+                // connectedPerson: '',
               })
               .then(() => {
                 console.log('User is offline!');
@@ -72,8 +69,11 @@ function App() {
                 console.log('error while offline');
               });
           }
+        } else if (nextAppState === 'inactive') {
+          console.log('in transaction');
+        } else {
+          console.log('app is killed');
         }
-
         appState.current = nextAppState;
         setAppStateVisible(appState.current);
         console.log('AppState', appState.current);

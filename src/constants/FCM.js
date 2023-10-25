@@ -26,3 +26,35 @@ const FCM_TOKEN_HANDLER = async () => {
     console.log(error);
   }
 };
+//send remote notification
+import axios from 'axios';
+
+export async function sendFCMMessage(recipientToken, title, body) {
+  const fcmEndpoint = 'https://fcm.googleapis.com/fcm/send';
+
+  const message = {
+    to: recipientToken,
+    notification: {
+      title: body.name,
+      body: body.message
+        ? body.message
+        : body.video
+        ? body.video
+        : body.image
+        ? body.image
+        : null,
+    },
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer AAAAIlQNIuc:APA91bEgJ8Gihrrl75V9mHoocLXti257YynEwBdYFHdwBVXmfuIGoS1UFDSxOjYLu_G8whje49ddNzr9IAWgp6311zk-W5b0mPCd-CiIoBwlNnujwwHnVAvKifD-45hk6nVaE4aUk5c8`,
+  };
+
+  try {
+    const response = await axios.post(fcmEndpoint, message, {headers});
+    console.log('FCM message sent successfully:', response.data);
+  } catch (error) {
+    console.error('Error sending FCM message:', error);
+  }
+}
