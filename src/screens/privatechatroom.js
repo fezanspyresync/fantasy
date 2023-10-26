@@ -9,6 +9,8 @@ import {
   Touchable,
   StatusBar,
   Tab,
+  Alert,
+  Keyboard,
 } from 'react-native';
 import React, {
   useEffect,
@@ -40,6 +42,8 @@ import RNFetchBlob from 'react-native-fetch-blob';
 import storage from '@react-native-firebase/storage';
 import {remove} from '@amplitude/analytics-react-native';
 import {sendFCMMessage} from '../constants/FCM';
+import EmojiPicker from 'rn-emoji-keyboard';
+import EmojiSelector, {Categories} from 'react-native-emoji-selector';
 
 const PrivateChat = () => {
   // const {name, image, isLive} = route.params;
@@ -63,6 +67,8 @@ const PrivateChat = () => {
   // let pendingMessageCounter = 0;
   const [pendingMessageCounter, setPendingMessageCounter] = useState(0);
   const [ReceiverToken, setReceiverToken] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const inputRef = useRef(null);
   const messageHandler = msg => {
     if (
       isCurrentPersonInteractingMe == route.params.id &&
@@ -480,34 +486,67 @@ const PrivateChat = () => {
   console.log('usememo is perfect are not', isCurrentPersonWithme);
   console.log('usememo is perfect are not', isCurrentPersonInteractingMe);
 
+  const emojiPickHandler = emoji => {
+    console.log('coming emoji', emoji.emoji);
+    setMessage(message + emoji.emoji);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.messsageOverAllContainer}>
-        <View style={styles.messageTextContainer}>
-          <Entypo name="emoji-happy" size={30} color={colors.mainColor} />
-          <TextInput
-            value={message}
-            onChangeText={messageHandler}
-            placeholder="Message"
-            placeholderTextColor="#0000"
-            style={styles.input}
-            multiline
-          />
-          <Entypo
-            name="attachment"
-            size={30}
-            color={colors.mainColor}
-            onPress={() => requestPermissions()}
-          />
+      <View>
+        <View style={[styles.messsageOverAllContainer]}>
+          <View style={styles.messageTextContainer}>
+            <TouchableOpacity
+              onPress={() => {
+                setIsOpen(!isOpen);
+                Keyboard.dismiss();
+              }}>
+              <Entypo name="emoji-happy" size={30} color={colors.mainColor} />
+            </TouchableOpacity>
+            <TextInput
+              ref={inputRef}
+              value={message}
+              onChangeText={messageHandler}
+              placeholder="Message"
+              placeholderTextColor="#0000"
+              style={styles.input}
+              multiline
+              onFocus={daa => {
+                console.log(daa, 'onfocya');
+                setIsOpen(false);
+              }}
+            />
+            <Entypo
+              name="attachment"
+              size={30}
+              color={colors.mainColor}
+              onPress={() => requestPermissions()}
+            />
+          </View>
+          <TouchableOpacity
+            style={styles.sendContainer}
+            onPress={() => {
+              messageSubmitHandler();
+            }}>
+            {message == '' && (
+              <MaterialIcons name="send" size={30} color={'white'} />
+            )}
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.sendContainer}
-          onPress={() => messageSubmitHandler()}>
-          {message == '' && (
-            <MaterialIcons name="send" size={30} color={'white'} />
-          )}
-        </TouchableOpacity>
+        {isOpen && (
+          <View style={{height: heightPercentageToDP(40)}}>
+            <EmojiSelector
+              showHistory={true}
+              showSearchBar={false}
+              category={Categories.symbols}
+              onEmojiSelected={emoji => {
+                setMessage(message + emoji);
+              }}
+            />
+          </View>
+        )}
       </View>
+
       <View style={styles.messageList}>
         {result.length !== 0 && (
           <FlatList
@@ -550,7 +589,9 @@ const PrivateChat = () => {
                       },
                     ]}>
                     {item.message && (
-                      <Text style={{color: 'white'}}>{item.message}</Text>
+                      <Text style={{color: 'white', fontSize: 16}}>
+                        {item.message}
+                      </Text>
                     )}
                     {item.image && (
                       <Image
@@ -672,6 +713,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    fontSize: 16,
   },
   sendContainer: {
     height: heightPercentageToDP(8),

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
+import Toast from 'react-native-toast-message';
 
 export async function requestUserPermission() {
   const authStatus = await messaging().requestPermission();
@@ -25,6 +26,13 @@ const FCM_TOKEN_HANDLER = async () => {
   } catch (error) {
     console.log(error);
   }
+  const unsubscribe = messaging().onMessage(async remoteMessage => {
+    Toast.show({type: 'info', text1: 'message', text2: remoteMessage.from});
+    Alert.alert(
+      'A new FCM message arrived!',
+      JSON.stringify(remoteMessage.data),
+    );
+  });
 };
 //send remote notification
 import axios from 'axios';

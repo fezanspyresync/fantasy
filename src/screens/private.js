@@ -97,7 +97,11 @@ const Private = () => {
                   })
                 }
                 style={styles.user}>
-                <View style={styles.profilePic}>
+                <View
+                  style={[
+                    styles.profilePic,
+                    {borderColor: item.isLive ? 'green' : 'red'},
+                  ]}>
                   <Image
                     style={styles.pic}
                     source={{
@@ -105,32 +109,36 @@ const Private = () => {
                     }}
                   />
                 </View>
-                <View style={styles.userInfo}>
-                  <Text style={styles.userInfoColor}>{item.name}</Text>
-                  {item?.pendingMessages?.filter(data => data.receiver == id)
-                    .length > 0 && (
-                    <View
-                      style={{
-                        backgroundColor: 'blue',
-                        marginRight: 5,
-                        borderWidth: 1,
-                        borderRadius: 20,
-                        alignSelf: 'center',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        padding: 1,
-                        minHeight: 30,
-                        minWidth: 30,
-                      }}>
-                      <Text style={{color: 'white'}}>
-                        {
-                          item?.pendingMessages?.filter(
-                            data => data.receiver == id,
-                          )[0]?.totalMessages
-                        }
-                      </Text>
-                    </View>
-                  )}
+                <View style={{flex: 1}}>
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userInfoColor}>{item.name}</Text>
+
+                    {item?.pendingMessages?.filter(data => data.receiver == id)
+                      .length > 0 && (
+                      <View
+                        style={{
+                          backgroundColor: 'blue',
+                          marginRight: 5,
+                          borderWidth: 1,
+                          borderRadius: 20,
+                          alignSelf: 'center',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          padding: 1,
+                          minHeight: 30,
+                          minWidth: 30,
+                        }}>
+                        <Text style={{color: 'white'}}>
+                          {
+                            item?.pendingMessages?.filter(
+                              data => data.receiver == id,
+                            )[0]?.totalMessages
+                          }
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text>{item.isLive ? 'online' : 'offline'}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -151,12 +159,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginVertical: heightPercentageToDP(2),
     marginHorizontal: widthPercentageToDP(2),
+    backgroundColor: 'blue',
   },
   profilePic: {
     height: heightPercentageToDP(8),
     width: widthPercentageToDP(16),
     borderRadius: 50,
-    backgroundColor: 'red',
+    // backgroundColor: 'red',
+    borderWidth: 2,
+    // padding: 3,
     overflow: 'hidden',
   },
   pic: {
@@ -170,8 +181,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
+    // alignSelf: 'flex-start',
     // backgroundColor: 'red',
     flex: 1,
+    // backgroundColor: 'blue',
   },
   userInfoColor: {
     color: '#000',

@@ -17,6 +17,7 @@ import {Provider, useDispatch, useSelector} from 'react-redux';
 import store from './src/store/store';
 import {isOnline} from './src/store/slice';
 import messaging from '@react-native-firebase/messaging';
+import Toast from 'react-native-toast-message';
 
 const Stack = createStackNavigator();
 
@@ -98,41 +99,44 @@ function App() {
   }, []);
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen
-          name="splash"
-          component={Splash}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="addname"
-          component={Addname}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="displaymedia"
-          component={Displaymedia}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="privateChat"
-          component={PrivateChat}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name="addgender"
-          component={Addgender}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen name="Verification" component={Verify} />
-        <Stack.Screen
-          name="home"
-          component={Home}
-          options={{headerShown: false}}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <>
+      <NavigationContainer>
+        <Stack.Navigator>
+          <Stack.Screen
+            name="splash"
+            component={Splash}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="addname"
+            component={Addname}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="displaymedia"
+            component={Displaymedia}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="privateChat"
+            component={PrivateChat}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="addgender"
+            component={Addgender}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen name="Verification" component={Verify} />
+          <Stack.Screen
+            name="home"
+            component={Home}
+            options={{headerShown: false}}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+      <Toast />
+    </>
   );
 }
 
