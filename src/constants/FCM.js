@@ -26,13 +26,6 @@ const FCM_TOKEN_HANDLER = async () => {
   } catch (error) {
     console.log(error);
   }
-  const unsubscribe = messaging().onMessage(async remoteMessage => {
-    Toast.show({type: 'info', text1: 'message', text2: remoteMessage.from});
-    Alert.alert(
-      'A new FCM message arrived!',
-      JSON.stringify(remoteMessage.data),
-    );
-  });
 };
 //send remote notification
 import axios from 'axios';

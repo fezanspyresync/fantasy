@@ -5,6 +5,7 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
+  Alert,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,6 +16,8 @@ import {
 import {socket} from '../..';
 import {useIsFocused, useNavigation} from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore';
+import Toast from 'react-native-toast-message';
+import messaging from '@react-native-firebase/messaging';
 
 let id = '';
 const Private = () => {
@@ -82,6 +85,20 @@ const Private = () => {
     navigation.navigate('privateChat', receiverdata);
   };
 
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      Toast.show({type: 'info', text1: 'message', text2: remoteMessage.from});
+      Alert.alert(
+        'A new FCM message arrived!',
+        JSON.stringify(remoteMessage.data),
+      );
+    });
+  }, []);
+
+  const showToast = () => {
+    Toast.show({type: 'info', text: 'message', text2: 'message '});
+  };
+
   return (
     <View style={styles.container}>
       {allUsers.length > 0 && (
@@ -138,7 +155,13 @@ const Private = () => {
                       </View>
                     )}
                   </View>
-                  <Text>{item.isLive ? 'online' : 'offline'}</Text>
+                  <Text
+                    style={{
+                      marginLeft: 10,
+                      color: item.isLive ? 'green' : 'red',
+                    }}>
+                    {item.isLive ? 'online' : 'offline'}
+                  </Text>
                 </View>
               </TouchableOpacity>
             );
@@ -159,7 +182,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginVertical: heightPercentageToDP(2),
     marginHorizontal: widthPercentageToDP(2),
-    backgroundColor: 'blue',
+    // backgroundColor: 'blue',
   },
   profilePic: {
     height: heightPercentageToDP(8),
@@ -181,6 +204,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
+    // alignSelf: 'flex-start',
     // alignSelf: 'flex-start',
     // backgroundColor: 'red',
     flex: 1,
