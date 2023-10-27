@@ -18,6 +18,8 @@ import store from './src/store/store';
 import {isOnline} from './src/store/slice';
 import messaging from '@react-native-firebase/messaging';
 import Toast from 'react-native-toast-message';
+import {requestUserPermission} from './src/constants/FCM';
+import RemotePushController from './src/constants/notification';
 
 const Stack = createStackNavigator();
 
@@ -81,17 +83,21 @@ function App() {
       },
     );
     //FCM HANDLER
-    try {
-      const unsubscribe = messaging().onMessage(async remoteMessage => {
-        console.log(
-          'A new FCM message arrived!',
-          JSON.stringify(remoteMessage),
-        );
-      });
-      console.log('foreground messages', unsubscribe);
-    } catch (error) {
-      console.log(error);
-    }
+    // try {
+    //   const unsubscribe = messaging().onMessage(async remoteMessage => {
+    //     console.log(
+    //       'A new FCM message arrived!',
+    //       JSON.stringify(remoteMessage),
+    //     );
+    //   });
+    //   console.log('foreground messages', unsubscribe);
+    // } catch (error) {
+    //   console.log(error);
+    // }
+
+    setTimeout(() => {
+      requestUserPermission();
+    }, 3500);
 
     return () => {
       subscription.remove();
@@ -136,6 +142,7 @@ function App() {
         </Stack.Navigator>
       </NavigationContainer>
       <Toast />
+      {/* <RemotePushController /> */}
     </>
   );
 }

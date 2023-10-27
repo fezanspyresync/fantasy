@@ -43,9 +43,7 @@ const Addgender = () => {
         console.log(error);
       });
   };
-  useEffect(() => {
-    requestUserPermission();
-  }, []);
+  useEffect(() => {}, []);
   return (
     <View style={styles.container}>
       <View style={styles.imagesContainer}>

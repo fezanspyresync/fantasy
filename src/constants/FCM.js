@@ -35,8 +35,20 @@ export async function sendFCMMessage(recipientToken, title, body) {
 
   const message = {
     to: recipientToken,
+    data: {
+      title: body.name,
+
+      body: body.message
+        ? body.message
+        : body.video
+        ? body.video
+        : body.image
+        ? body.image
+        : null,
+    },
     notification: {
       title: body.name,
+
       body: body.message
         ? body.message
         : body.video
@@ -53,9 +65,13 @@ export async function sendFCMMessage(recipientToken, title, body) {
   };
 
   try {
-    const response = await axios.post(fcmEndpoint, message, {headers});
+    const response = await axios.post(fcmEndpoint, JSON.stringify(message), {
+      headers,
+    });
     console.log('FCM message sent successfully:', response.data);
   } catch (error) {
     console.error('Error sending FCM message:', error);
   }
 }
+
+//forground FCM LISnter

@@ -85,20 +85,6 @@ const Private = () => {
     navigation.navigate('privateChat', receiverdata);
   };
 
-  useEffect(() => {
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      Toast.show({type: 'info', text1: 'message', text2: remoteMessage.from});
-      Alert.alert(
-        'A new FCM message arrived!',
-        JSON.stringify(remoteMessage.data),
-      );
-    });
-  }, []);
-
-  const showToast = () => {
-    Toast.show({type: 'info', text: 'message', text2: 'message '});
-  };
-
   return (
     <View style={styles.container}>
       {allUsers.length > 0 && (
@@ -158,6 +144,8 @@ const Private = () => {
                   <Text
                     style={{
                       marginLeft: 10,
+                      bottom: 10,
+                      // backgroundColor: 'blue',
                       color: item.isLive ? 'green' : 'red',
                     }}>
                     {item.isLive ? 'online' : 'offline'}

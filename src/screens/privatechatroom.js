@@ -150,7 +150,10 @@ const PrivateChat = () => {
         }
       }
 
-      if (!isPersonAvailable) {
+      if (
+        !isPersonAvailable ||
+        isCurrentPersonInteractingMe !== route.params.id
+      ) {
         sendFCMMessage(ReceiverToken, 'message', payload);
       }
 
