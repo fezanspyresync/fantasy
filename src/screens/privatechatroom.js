@@ -120,16 +120,6 @@ const PrivateChat = () => {
       };
 
       //encryption test
-      let ciphertext = CryptoJS.AES.encrypt(
-        JSON.stringify(payload),
-        'secret key 123',
-      ).toString();
-      console.log('encrypted object=====>', ciphertext);
-
-      //decrypt object
-      let bytes = CryptoJS.AES.decrypt(ciphertext, 'secret key 123');
-      let decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-      console.log('decrypt====>', decryptedData);
 
       //working on pending messages
       if (isCurrentPersonInteractingMe !== route.params.id) {
@@ -227,7 +217,7 @@ const PrivateChat = () => {
 
         const allMessages = querySnapShot.docs.map(item => {
           // updating scene messages if contact person is not present
-
+          console.log('sdfjsf', item.data());
           return {...item.data()};
         });
         setResult(allMessages);
