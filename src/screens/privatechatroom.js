@@ -11,6 +11,7 @@ import {
   Tab,
   Alert,
   Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 import React, {
   useEffect,
@@ -44,6 +45,9 @@ import {remove} from '@amplitude/analytics-react-native';
 import {sendFCMMessage} from '../constants/FCM';
 import EmojiPicker from 'rn-emoji-keyboard';
 import EmojiSelector, {Categories} from 'react-native-emoji-selector';
+import Toast from 'react-native-toast-message';
+
+import CryptoJS from 'react-native-crypto-js';
 
 const PrivateChat = () => {
   // const {name, image, isLive} = route.params;
@@ -69,6 +73,7 @@ const PrivateChat = () => {
   const [ReceiverToken, setReceiverToken] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef(null);
+  const [loading, setLoading] = useState(false);
   const messageHandler = msg => {
     if (
       isCurrentPersonInteractingMe == route.params.id &&
@@ -113,6 +118,19 @@ const PrivateChat = () => {
             ? true
             : false,
       };
+
+      //encryption test
+      let ciphertext = CryptoJS.AES.encrypt(
+        JSON.stringify(payload),
+        'secret key 123',
+      ).toString();
+      console.log('encrypted object=====>', ciphertext);
+
+      //decrypt object
+      let bytes = CryptoJS.AES.decrypt(ciphertext, 'secret key 123');
+      let decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+      console.log('decrypt====>', decryptedData);
+
       //working on pending messages
       if (isCurrentPersonInteractingMe !== route.params.id) {
         if (personalInfo[0].pendingMessages.length > 0) {
@@ -417,9 +435,21 @@ const PrivateChat = () => {
         const mimeType = result[0].type;
 
         if (mimeType.startsWith('video/')) {
+          setLoading(true);
           // Handle video upload
           const path = result[0].uri;
 
+          console.log('video size====>', result[0].size);
+          const limitVideoSize = 44788857;
+          if (result[0].size > limitVideoSize) {
+            Toast.show({
+              type: 'error',
+              text1: 'Error',
+              text2: 'file size is to large',
+            });
+            setLoading(false);
+            return;
+          }
           const res = await RNFetchBlob.fs.readFile(path, 'base64');
           const blobData = `data:${mimeType};base64,${res}`;
 
@@ -430,14 +460,18 @@ const PrivateChat = () => {
           await reference.putString(blobData, 'data_url');
 
           const videoUrl = await storage().ref(filename).getDownloadURL();
+          setLoading(false);
 
           // setVideo(videoUrl);
           messageSubmitHandler(undefined, videoUrl);
 
           // You can do further processing or set the video URL as needed
         } else if (mimeType.startsWith('image/')) {
+          setLoading(true);
           // Handle video upload
           const path = result[0].uri;
+
+          console.log('image size====>', result[0].size);
 
           const res = await RNFetchBlob.fs.readFile(path, 'base64');
           const blobData = `data:${mimeType};base64,${res}`;
@@ -449,6 +483,7 @@ const PrivateChat = () => {
           await reference.putString(blobData, 'data_url');
 
           const ImageUrl = await storage().ref(filename).getDownloadURL();
+          setLoading(false);
 
           // setImage(ImageUrl);
           messageSubmitHandler(ImageUrl, undefined);
@@ -494,6 +529,8 @@ const PrivateChat = () => {
     setMessage(message + emoji.emoji);
   };
 
+  // Function to encrypt text
+
   return (
     <View style={styles.container}>
       <View>
@@ -511,7 +548,7 @@ const PrivateChat = () => {
               value={message}
               onChangeText={messageHandler}
               placeholder="Message"
-              placeholderTextColor="#0000"
+              placeholderTextColor="#000"
               style={styles.input}
               multiline
               onFocus={daa => {
@@ -690,6 +727,27 @@ const PrivateChat = () => {
           )}
         </View>
       </View>
+      {loading && (
+        // <View
+        //   style={{
+        //     // flex: 1,
+        //     left: 0,
+        //     right: 0,
+        //     top: 0,
+        //     bottom: 0,
+        //     backgroundColor: 'transparent',
+        //     position: 'absolute',
+        //     justifyContent: 'center',
+        //     alignItems: 'center',
+        //   }}>
+        //   <ActivityIndicator size="large" color={colors.mainColor} />
+        // </View>
+        <ActivityIndicator
+          size="large"
+          color={colors.mainColor}
+          style={{position: 'absolute', left: '45%', top: '45%'}}
+        />
+      )}
     </View>
   );
 };
@@ -717,10 +775,13 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
+    color: '#000',
   },
   sendContainer: {
-    height: heightPercentageToDP(8),
-    width: widthPercentageToDP(16),
+    // height: heightPercentageToDP(6),
+    // width: widthPercentageToDP(14),
+    height: 55,
+    width: 55,
     borderRadius: 50,
     backgroundColor: colors.mainColor,
     justifyContent: 'center',
@@ -729,6 +790,8 @@ const styles = StyleSheet.create({
   },
   messageList: {
     flex: 1,
+    // backgroundColor: 'red',
+    paddingVertical: 5,
   },
   ReceiverProfileContainer: {
     // height: heightPercentageToDP(12),

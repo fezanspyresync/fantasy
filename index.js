@@ -28,11 +28,10 @@ try {
     // );
   });
   messaging().onMessage(async remoteMessage => {
-    console.log('remote message===>', remoteMessage);
     Toast.show({
       type: 'info',
       text1: 'message',
-      text2: remoteMessage.from,
+      text2: remoteMessage.data.body,
     });
   });
 } catch (error) {

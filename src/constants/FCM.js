@@ -41,9 +41,9 @@ export async function sendFCMMessage(recipientToken, title, body) {
       body: body.message
         ? body.message
         : body.video
-        ? body.video
+        ? 'share video'
         : body.image
-        ? body.image
+        ? 'share image'
         : null,
     },
     notification: {
