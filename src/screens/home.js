@@ -1,15 +1,36 @@
 import {View, Text, Image, StyleSheet} from 'react-native';
-import React from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import Private from './private';
 import PublicChat from './publicChat';
 import Share from './share';
 import {colors} from '../constants/colors';
 import PrivateStack from './privatechatstack';
+import Rooms from './rooms';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import firestore, {firebase} from '@react-native-firebase/firestore';
 
 const Tab = createBottomTabNavigator();
-
+let user = '';
 const Home = () => {
+  const [currentPerson, setCurrentPerson] = useState([]);
+  const getCurrentPerson = useCallback(async () => {
+    user = await AsyncStorage.getItem('user');
+  }, []);
+  getCurrentPerson();
+  useEffect(() => {
+    const subscriber = firestore()
+      .collection('users')
+      .onSnapshot(querySnapShot => {
+        const allUsers = querySnapShot.docs.map(item => {
+          return {...item.data()};
+        });
+        const current = allUsers.filter(data => data.name == user);
+        setCurrentPerson(current);
+        // setResult(allUsers);
+      });
+  }, []);
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -17,6 +38,7 @@ const Home = () => {
         tabBarShowLabel: false,
         tabBarStyle: {
           height: 80,
+          backgroundColor: '#CD5C5C',
         },
       }}>
       <Tab.Screen
@@ -52,6 +74,7 @@ const Home = () => {
                       top: 0,
                     }}></View>
                 )}
+
                 <Image
                   source={require('../assets/single-person.png')}
                   style={styles.icons}
@@ -63,7 +86,7 @@ const Home = () => {
       />
       <Tab.Screen
         name="public"
-        component={PublicChat}
+        component={Rooms}
         options={{
           tabBarIcon: ({focused, color, size}) => {
             return (
@@ -93,10 +116,23 @@ const Home = () => {
                       top: 0,
                     }}></View>
                 )}
-                <Image
-                  source={require('../assets/people.png')}
-                  style={styles.icons}
-                />
+                <View>
+                  <Image
+                    source={require('../assets/people.png')}
+                    style={styles.icons}
+                  />
+                  <Text
+                    style={{
+                      position: 'absolute',
+                      right: -8,
+                      top: -8,
+                      color: colors.mainColor,
+                    }}>
+                    {currentPerson[0]?.pendingGroupMessages > 0
+                      ? currentPerson[0]?.pendingGroupMessages
+                      : ''}
+                  </Text>
+                </View>
               </>
             );
           },

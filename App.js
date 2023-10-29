@@ -20,6 +20,7 @@ import messaging from '@react-native-firebase/messaging';
 import Toast from 'react-native-toast-message';
 import {requestUserPermission} from './src/constants/FCM';
 import RemotePushController from './src/constants/notification';
+import Girlsroom from './src/screens/girlsrooms';
 
 const Stack = createStackNavigator();
 
@@ -131,6 +132,11 @@ function App() {
           <Stack.Screen
             name="addgender"
             component={Addgender}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="girlsroom"
+            component={Girlsroom}
             options={{headerShown: false}}
           />
           <Stack.Screen name="Verification" component={Verify} />

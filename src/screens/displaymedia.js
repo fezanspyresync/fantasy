@@ -70,4 +70,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-export default Displaymedia;
+export default React.memo(Displaymedia);

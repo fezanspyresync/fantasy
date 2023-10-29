@@ -13,7 +13,7 @@ import {
   Keyboard,
   ActivityIndicator,
 } from 'react-native';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useIsFocused, useNavigation, useRoute} from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -35,8 +35,10 @@ import RNFetchBlob from 'react-native-fetch-blob';
 import storage from '@react-native-firebase/storage';
 import {sendFCMMessage} from '../constants/FCM';
 import EmojiSelector, {Categories} from 'react-native-emoji-selector';
+import {all} from 'axios';
 
-const PrivateChat = () => {
+let currentPerson = '';
+const Girlsroom = () => {
   // const {name, image, isLive} = route.params;
   const navigation = useNavigation();
   const route = useRoute();
@@ -61,332 +63,111 @@ const PrivateChat = () => {
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const [alloffLineUsers, setAlloffLineUsers] = useState([]);
+  const [offlineToken, setofflineToken] = useState([]);
+  console.log('off', alloffLineUsers);
   const messageHandler = msg => {
-    if (
-      isCurrentPersonInteractingMe == route.params.id &&
-      isPersonAvailable == true
-    ) {
-      firestore().collection('users').doc(route.params.id).update({
-        isTyping: true,
-      });
-
-      clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => {
-        firestore().collection('users').doc(route.params.id).update({
-          isTyping: false,
-        });
-      }, 1000);
-    } else {
-      // pendingMessageCounter=pendingMessageCounter
-      firestore().collection('users').doc(route.params.id).update({
-        isTyping: false,
-      });
-    }
     setMessage(msg);
   };
 
-  console.log('ysagdysadysafd', isPersonTyping);
-
   const messageSubmitHandler = async (image = '', video = '') => {
     Keyboard.dismiss();
-    // const user = await AsyncStorage.getItem('user');
     setLoading(true);
     if (message || image || video) {
       const payload = {
-        from: route.params.id,
-        to: route.params.data.name,
+        from: currentPerson,
         video,
         image,
         message,
         timeStamp: new Date().getTime(),
         mesageSendTime: moment().format('LT'),
-        isMessageScene:
-          isCurrentPersonInteractingMe == route.params.id &&
-          isPersonAvailable == true
-            ? true
-            : false,
       };
       //working on pending messages
-      if (isCurrentPersonInteractingMe !== route.params.id) {
-        if (personalInfo[0].pendingMessages.length > 0) {
-          const filterMyMessages = personalInfo[0].pendingMessages.filter(
-            data => data.receiver == route.params.data.name,
-          );
-          if (filterMyMessages.length > 0) {
-            filterMyMessages[0].totalMessages = ++filterMyMessages[0]
-              .totalMessages;
+      if (offlineToken.length > 0) {
+        sendFCMMessage(offlineToken, 'message', payload);
+      }
+      //running
+      firestore()
+        .collection('girlsChat')
 
-            firestore().collection('users').doc(route.params.id).update({
-              pendingMessages: personalInfo[0].pendingMessages,
-            });
-          } else {
-            const payload = {
-              receiver: route.params.data.name,
-              totalMessages: 1,
-            };
-            const addNewPerson = [...personalInfo[0].pendingMessages, payload];
-            firestore().collection('users').doc(route.params.id).update({
-              pendingMessages: addNewPerson,
-            });
-          }
-        } else {
-          const payload = {
-            receiver: route.params.data.name,
-            totalMessages: 1,
-          };
+        .add(payload)
+        .then(() => {
+          console.log('message is send');
+        })
+        .catch(() => {
+          console.log('sending problem');
+        });
+      setLoading(false);
+      //pending cause problem
+      if (alloffLineUsers.length > 0) {
+        alloffLineUsers.forEach(data => {
           firestore()
             .collection('users')
-            .doc(route.params.id)
+            .doc(data.name)
             .update({
-              pendingMessages: [payload],
+              pendingGroupMessages: Number(data.pendingGroupMessages + 1),
             });
-        }
-      }
-
-      if (
-        !isPersonAvailable ||
-        isCurrentPersonInteractingMe !== route.params.id
-      ) {
-        sendFCMMessage(ReceiverToken, 'message', payload);
-      }
-
-      firestore()
-        .collection('chats')
-        .doc('' + route.params.id + route.params.data.name)
-        .collection('messages')
-        .add(payload)
-        .then(() => {
-          console.log('message is send');
-        })
-        .catch(() => {
-          console.log('message is received');
         });
-      // socket.emit('sendPrivateMessage', payload, name);
-      setLoading(false);
-      firestore()
-        .collection('chats')
-        .doc('' + route.params.data.name + route.params.id)
-        .collection('messages')
-        .add(payload)
-        .then(() => {
-          console.log('message is send');
-        })
-        .catch(() => {
-          console.log('message is received');
-        });
-      // socket.emit('sendPrivateMessage', payload, name);
+      }
 
       setMessage('');
       setVideo('');
       setImage('');
     }
   };
-  const backHandler = () => {
+  const backHandler = useCallback(() => {
     navigation.goBack();
-  };
-  const displayMediaHandler = media => {
+  }, []);
+  const displayMediaHandler = useCallback(media => {
     navigation.navigate('displaymedia', media);
-  };
+  }, []);
   // getting all conversation
   useEffect(() => {
-    seenMessageHandler();
+    const getCurrentPerson = async () => {
+      const currentUser = await AsyncStorage.getItem('user');
+      currentPerson = currentUser;
+    };
+    getCurrentPerson();
     const subscriber = firestore()
-      .collection('chats')
-      .doc('' + route.params.id + route.params.data.name)
-      .collection('messages')
+      .collection('girlsChat')
       .orderBy('timeStamp', 'asc')
       .onSnapshot(querySnapShot => {
-        // if (isCurrentPersonInteractingMe == route.params.data.name) {
-        //   seenMessageHandler();
-        // }
-
         const allMessages = querySnapShot.docs.map(item => {
-          // updating scene messages if contact person is not present
-
           return {...item.data()};
         });
         setResult(allMessages);
       });
-
-    // return () => subscriber();
   }, []);
 
   useEffect(() => {
-    seenMessageHandler();
-  }, [isFocus]);
-
-  //seenMessageHandler
-  const seenMessageHandler = item => {
-    //remove pending messages
-    //remove something
-    console.log('fiushfiusdhfsfdufsuihdhf', route.params.data.pendingMessages);
-    if (route.params.data.pendingMessages.length > 0) {
-      const filterMyData = route.params.data?.pendingMessages.filter(
-        data => data.receiver == route.params.id,
-
-        console.log('asgduyasgduyasdyasg', filterMyData),
-      );
-      if (filterMyData.length > 0) {
-        const remove = route.params.data.pendingMessages.filter(
-          data => data.receiver !== route.params.id,
-        );
-        firestore().collection('users').doc(route.params.data.name).update({
-          pendingMessages: remove,
-        });
-      }
-    }
-    // Update messages where 'to' is equal to route.params.id
-    firestore()
-      .collection('chats')
-      .doc('' + route.params.data.name + route.params.id)
-      .collection('messages')
-      .where('to', '==', route.params.id)
-      .get()
-      .then(querySnapshot => {
-        querySnapshot.forEach(doc => {
-          // Update the document with the new 'isMessageScene' field
-          firestore()
-            .collection('chats')
-            .doc('' + route.params.data.name + route.params.id)
-            .collection('messages')
-            .doc(doc.id)
-            .update({
-              isMessageScene: true, // Update the 'isMessageScene' field
-            })
-            .then(() => {
-              console.log('Message marked as read');
-            })
-            .catch(error => {
-              console.log('Error while updating message', error);
-            });
-        });
-      });
-
-    //update from myList
-    // Update messages where 'to' is equal to route.params.id
-    firestore()
-      .collection('chats')
-      .doc('' + route.params.id + route.params.data.name)
-      .collection('messages')
-      .where('to', '==', route.params.id)
-      .get()
-      .then(querySnapshot => {
-        querySnapshot.forEach(doc => {
-          // Update the document with the new 'isMessageScene' field
-          firestore()
-            .collection('chats')
-            .doc('' + route.params.id + route.params.data.name)
-            .collection('messages')
-            .doc(doc.id)
-            .update({
-              isMessageScene: true, // Update the 'isMessageScene' field
-            })
-            .then(() => {
-              console.log('Message marked as read');
-            })
-            .catch(error => {
-              console.log('Error while updating message', error);
-            });
-        });
-      });
-  };
-
-  //get my personal inf0
-  useEffect(() => {
-    firestore()
+    const subscriber = firestore()
       .collection('users')
       .onSnapshot(querySnapShot => {
         const allUsers = querySnapShot.docs.map(item => {
           return {...item.data()};
         });
-        const filter = allUsers.filter(data => data.name == route.params.id);
-
-        // setAllUsers(filter);
-        setPersonalInfo(filter);
-      });
-  }, []);
-  // get interacted person status
-  useEffect(() => {
-    async function getCurrentUserStatus() {
-      const subscriber = firestore()
-        .collection('users')
-        .onSnapshot(querySnapShot => {
-          const allUsers = querySnapShot.docs.map(item => {
-            return {...item.data()};
-          });
-          const filter = allUsers.filter(
-            data => data.name == route.params.data.name,
-          );
-          setIsPersonAvailable(filter[0].isLive);
-          setIsCurrentPersonInteractingMe(filter[0].connectedPerson);
-          setIsPersonTyping(filter[0].isTyping);
-          setReceiverToken(filter[0].token);
-
-          // setAllUsers(filter);
+        const allOffLineUsers = allUsers.filter(
+          data => data.isInGroup == false,
+        );
+        setAlloffLineUsers(allOffLineUsers);
+        const offlineUserstoken = [];
+        allOffLineUsers.forEach(data => {
+          offlineUserstoken.push(data.token);
         });
-    }
-    getCurrentUserStatus();
-    // async function getCurrentReceiver() {
-    //   const user = firestore()
-    //     .collection('users')
-    //     .doc(route.params.data.name)
-    //     .get()
-    //     .then(data => {
-    //       console.log('ugfuygfuyds', data.data().isLive);
-    //       setIsPersonAvailable(data.data().isLive);
-    //     });
-    // }
-    // getCurrentReceiver();
 
-    // firestore()
-    //   .collection('users')
-    //   .where('name', '!=', userName)
-    //   .get()
-    //   .then(res => {
-    //     console.log('========<<<<<>>>>>>>>>>>', res.docs[0].data());
-    //     // setAllUsers(JSON.stringify(res.docs));
-    //     if (res.docs.length !== 0) {
-    //       const getData = res.docs.map(data => data.data());
-    //       setAllUsers(getData);
-    //     }
-    //   })
-    //   .catch(error => {
-    //     console.log('===============>', error);
-    //   });
-  }, []);
-  //disConnect person
-  useEffect(() => {
+        setofflineToken(offlineUserstoken);
+
+        // setResult(allUsers);
+      });
+
     return () => {
-      firestore()
-        .collection('users')
-        .doc(route.params.id)
-        .update({
-          connectedPerson: '',
-        })
-        .then(() => {})
-        .catch(error => {});
+      firestore().collection('users').doc(currentPerson).update({
+        isInGroup: false,
+      });
     };
   }, []);
 
-  // // useEffect(() => {
-  // //   async function getCurrentMessages() {
-  // const myname = await AsyncStorage.getItem('user');
-  // setCurrentUser(myname);
-  // // socket.emit('myFriendChat', {sender: myname, receiver: name});
-  // //  }
-  // //   getCurrentMessages();
-  // //   interViewID = setInterval(() => {
-  // //     socket.on('getAllChat', Msgs => {
-  // //       console.log('receiver current value', Msgs);
-  // //       setResult(Msgs);
-  // //     });
-  // //   }, 10);
-  // //   return () => {
-  // //     clearInterval(interViewID);
-  // //   };
-  // // }, [isFocus, socket]);
-
-  const requestPermissions = async () => {
+  const requestPermissions = useCallback(async () => {
     try {
       const status = await request(PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE);
 
@@ -395,7 +176,7 @@ const PrivateChat = () => {
       } else {
       }
     } catch (error) {}
-  };
+  }, []);
 
   const pickDocument = async () => {
     try {
@@ -502,7 +283,11 @@ const PrivateChat = () => {
                 setIsOpen(!isOpen);
                 Keyboard.dismiss();
               }}>
-              <Entypo name="emoji-happy" size={30} color={colors.mainColor} />
+              <Entypo
+                name="emoji-happy"
+                size={30}
+                color={colors.girlsRoomColor}
+              />
             </TouchableOpacity>
             <TextInput
               ref={inputRef}
@@ -520,7 +305,7 @@ const PrivateChat = () => {
             <Entypo
               name="attachment"
               size={30}
-              color={colors.mainColor}
+              color={colors.girlsRoomColor}
               onPress={() => requestPermissions()}
             />
           </View>
@@ -558,7 +343,7 @@ const PrivateChat = () => {
                     margin: 10,
 
                     alignItems:
-                      item.from == route.params.id ? 'flex-end' : 'flex-start',
+                      item.from == currentPerson ? 'flex-end' : 'flex-start',
                   }}>
                   <TouchableOpacity
                     style={[
@@ -572,8 +357,8 @@ const PrivateChat = () => {
                         overflow: item.image || item.video ? 'hidden' : null,
                         borderRadius: 4,
                         backgroundColor:
-                          item.from == route.params.id
-                            ? colors.mainColor
+                          item.from == currentPerson
+                            ? colors.girlsRoomColor
                             : 'gray',
                       },
                       item.image && {
@@ -631,7 +416,7 @@ const PrivateChat = () => {
                       }}>
                       {item.mesageSendTime}
                     </Text>
-                    <Text
+                    {/* <Text
                       style={{
                         textAlign: 'right',
                         zIndex: 100,
@@ -643,7 +428,7 @@ const PrivateChat = () => {
                           ? 'seen'
                           : 'deliever'
                         : ''}
-                    </Text>
+                    </Text> */}
                     {item.video || item.image ? (
                       <TouchableOpacity
                         onPress={() => displayMediaHandler(item)}
@@ -671,25 +456,25 @@ const PrivateChat = () => {
         <TouchableOpacity onPress={() => backHandler()}>
           <MaterialIcons name="arrow-back" size={30} color={'white'} />
         </TouchableOpacity>
-        <Image
+        {/* <Image
           source={{uri: route.params.data.image}}
           style={styles.receiverImage}
-        />
+        /> */}
         <View>
-          <Text style={styles.receiverName}>{route.params.data.name}</Text>
-          {isPersonTyping ? (
+          {/* <Text style={styles.receiverName}>{route.params.data.name}</Text> */}
+          {/* {isPersonTyping ? (
             <Text style={styles.receiverName}>typing...</Text>
           ) : (
             <Text style={styles.receiverName}>
               {isPersonAvailable ? 'Online' : 'offline'}
             </Text>
-          )}
+          )} */}
         </View>
       </View>
       {loading && (
         <ActivityIndicator
           size="large"
-          color={colors.mainColor}
+          color={colors.girlsRoomColor}
           style={{position: 'absolute', left: '45%', top: '45%'}}
         />
       )}
@@ -705,14 +490,15 @@ const styles = StyleSheet.create({
   messsageOverAllContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 5,
+    // marginBottom: 5,
+    paddingBottom: 5,
     paddingHorizontal: 10,
-    backgroundColor: '#F5F6E7',
+    backgroundColor: '#F7CBC0',
   },
   messageTextContainer: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: colors.mainColor,
+    borderColor: colors.girlsRoomColor,
     alignItems: 'center',
     paddingHorizontal: widthPercentageToDP(4),
     borderRadius: 30,
@@ -727,19 +513,19 @@ const styles = StyleSheet.create({
     height: heightPercentageToDP(8),
     width: widthPercentageToDP(16),
     borderRadius: 50,
-    backgroundColor: colors.mainColor,
+    backgroundColor: colors.girlsRoomColor,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 5,
   },
   messageList: {
     flex: 1,
-    paddingVertical: 3,
-    backgroundColor: '#F5F6E7',
+    paddingVertical: 1,
+    backgroundColor: '#F7CBC0',
   },
   ReceiverProfileContainer: {
     // height: heightPercentageToDP(12),
-    backgroundColor: colors.mainColor,
+    backgroundColor: colors.girlsRoomColor,
     flexDirection: 'row',
     paddingVertical: heightPercentageToDP(1),
     alignItems: 'center',
@@ -762,4 +548,4 @@ const styles = StyleSheet.create({
     right: 0,
   },
 });
-export default PrivateChat;
+export default Girlsroom;

@@ -1,10 +1,11 @@
 import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
-import React, {useEffect} from 'react';
+import React, {useCallback, useEffect} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import {socket} from '../..';
 import firestore from '@react-native-firebase/firestore';
 import {requestUserPermission} from '../constants/FCM';
+import {colors} from '../constants/colors';
 
 const Addgender = () => {
   const navigation = useNavigation();
@@ -14,7 +15,7 @@ const Addgender = () => {
     return Math.floor(nanoseconds); // Round down to the nearest whole number
   }
 
-  const enterInRoom = async gender => {
+  const enterInRoom = useCallback(async gender => {
     const token = await AsyncStorage.getItem('token');
     const randomNenoSeconds = generateRandomNenoSeconds();
     await AsyncStorage.setItem('user', `anon${randomNenoSeconds}`);
@@ -35,6 +36,8 @@ const Addgender = () => {
         isTyping: false,
         pendingMessages: [],
         token,
+        isInGroup: false,
+        pendingGroupMessages: Number(0),
       })
       .then(() => {
         navigation.replace('home');
@@ -42,10 +45,19 @@ const Addgender = () => {
       .catch(error => {
         console.log(error);
       });
-  };
-  useEffect(() => {}, []);
+  }, []);
+
   return (
     <View style={styles.container}>
+      <Text
+        style={{
+          textAlign: 'center',
+          bottom: 50,
+          fontSize: 18,
+          color: colors.girlsRoomColor,
+        }}>
+        Choose Gender
+      </Text>
       <View style={styles.imagesContainer}>
         <TouchableOpacity onPress={() => enterInRoom('male')}>
           <Image source={require('../assets/male.png')} style={styles.image} />
@@ -65,6 +77,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+    backgroundColor: '#C3F6F1',
   },
   imagesContainer: {
     flexDirection: 'row',
