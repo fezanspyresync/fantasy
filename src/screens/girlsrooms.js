@@ -96,6 +96,7 @@ const Girlsroom = () => {
         })
         .catch(() => {
           console.log('sending problem');
+          setLoading(false);
         });
       setLoading(false);
       //pending cause problem
@@ -113,6 +114,8 @@ const Girlsroom = () => {
       setMessage('');
       setVideo('');
       setImage('');
+    } else {
+      setLoading(false);
     }
   };
   const backHandler = useCallback(() => {
@@ -485,7 +488,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'column-reverse',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#F5F6E7',
   },
   messsageOverAllContainer: {
     flexDirection: 'row',

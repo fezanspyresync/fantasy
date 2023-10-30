@@ -1,9 +1,12 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
+var cors = require('cors');
 const stripe = require('stripe')(
   'sk_test_51NfKeDEIANEVTCSvfoCHcTdq4qRplJIUHnY6bQO65a1blVigIJLq1VbIZOFlyD0zPSQlXWjGGo6dhjIUXqGa7gxD00TewmIMf0',
 );
+app.use(cors());
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
@@ -14,6 +17,7 @@ app.post('/payment-sheet', async (req, res) => {
   try {
     // Use an existing Customer ID if this is a returning customer.
     const {amount, currency, token} = req.body;
+    console.log('==================>', amount, currency, token);
     const customer = await stripe.customers.create();
     const ephemeralKey = await stripe.ephemeralKeys.create(
       {customer: customer.id},
@@ -50,6 +54,6 @@ app.post('/payment-sheet', async (req, res) => {
   }
 });
 
-app.listen(4000, () => {
+app.listen(process.env || 4000, () => {
   console.log('server is running');
 });

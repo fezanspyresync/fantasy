@@ -185,7 +185,7 @@ const Private = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F6E7 ',
+    backgroundColor: '#F5F6E7',
   },
   user: {
     flexDirection: 'row',

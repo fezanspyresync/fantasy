@@ -68,12 +68,10 @@ const SubscriptionPlans = () => {
                 }}>
                 {item.icon}
               </View>
-              <TouchableOpacity
-                style={{marginVertical: 30}}
-                onPress={() => Alert.alert('live call')}>
+              <TouchableOpacity style={{marginVertical: 30}}>
                 <Text style={{color: 'white', fontSize: 18}}>{item.name}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => Alert.alert('live call')}>
+              <TouchableOpacity>
                 <Text style={{color: 'white', fontSize: 18}}>{item.price}</Text>
               </TouchableOpacity>
             </TouchableOpacity>
@@ -89,6 +87,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#F5F6E7',
   },
 });
 export default SubscriptionPlans;

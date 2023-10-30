@@ -5,13 +5,16 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
-import {StripeProvider, createToken} from '@stripe/stripe-react-native';
 import {SP_KEY} from '@env';
 import axios from 'axios';
 import {useNavigation} from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
+import {colors} from '../constants/colors';
 
-const PaymentScreen = () => {
+const PaymentScreen = ({route}) => {
+  console.log('========Route====>', typeof route.params.price[0]);
   const navigation = useNavigation();
   const [cardInfo, setCardInfo] = useState({
     cardNumber: '',
@@ -27,13 +30,19 @@ const PaymentScreen = () => {
   };
 
   const handleExpMonthChange = text => {
-    // Limit the expiration month to 2 digits
-    if (cardInfo.expMonth.length == 2) {
-      const value = cardInfo.expMonth + '/';
-      console.log('sfuygsyfugsydufgdsuyg', value);
-      setCardInfo({...cardInfo, expMonth: value});
+    // Remove any non-numeric characters
+    text = text.replace(/\D/g, '');
+
+    // Limit the expiration month to 4 characters (MM/YY)
+    if (text.length > 2) {
+      // If the input is longer than 2 characters, automatically add a forward slash
+      text = text.slice(0, 2) + '/' + text.slice(2);
     }
-    setCardInfo(prev => ({...prev, expMonth: text}));
+
+    // Limit the input to 5 characters (MM/YY)
+    if (text.length <= 5) {
+      setCardInfo(prev => ({...prev, expMonth: text}));
+    }
   };
 
   const handleCvcChange = text => {
@@ -43,15 +52,29 @@ const PaymentScreen = () => {
     }
   };
   //
-  console.log(cardInfo.expMonth);
   const handlePayment = async () => {
+    if (
+      cardInfo.cardNumber == '' ||
+      cardInfo.cvc == '' ||
+      cardInfo.expMonth == '' ||
+      cardInfo.cardNumber < 16 ||
+      cardInfo.cvc < 3 ||
+      cardInfo.expMonth < 5
+    ) {
+      Toast.show({
+        type: 'error',
+        text1: 'message',
+        text2: 'Please enter correct information',
+      });
+      return;
+    }
     try {
       const res = await axios.post(
         'https://api.stripe.com/v1/tokens',
         {
           'card[number]': cardInfo.cardNumber,
-          'card[exp_month]': cardInfo.expMonth,
-          'card[exp_year]': cardInfo.expYear,
+          'card[exp_month]': cardInfo.expMonth.split('/')[0],
+          'card[exp_year]': cardInfo.expMonth.split('/')[1],
           'card[cvc]': cardInfo.cvc,
         },
         {
@@ -63,16 +86,39 @@ const PaymentScreen = () => {
       );
       const token = res.data.id;
       console.log(token);
-      try {
-        const response = await axios.post(
-          'http://192.168.39.129:4000/payment-sheet',
-          {amount: 10000000, currency: 'eur', token},
-        );
-        console.log('is intent created', response);
-        navigation.navigate('videocall');
-      } catch (error) {
-        console.log(error);
+      if (token) {
+        Toast.show({
+          type: 'info',
+          text1: 'Success',
+          text2: 'Payment has been received',
+        });
+        navigation.navigate('videcall');
       }
+      // try {
+      //   const response = await axios.post(
+      //     'http://192.168.18.238:4000/payment-sheet',
+      //     {amount: Number(route.params.price[0]), currency: 'eur', token},
+      //   );
+      //   console.log('is intent created', response.status);
+      //   if (response.status == 200) {
+      //     Toast.show({
+      //       type: 'info',
+      //       text1: 'Success',
+      //       text2: 'Payment has been received',
+      //     });
+      //     navigation.navigate('videcall');
+      //   } else if (response.status == 400) {
+      //     navigation.navigate('videcall');
+      //   }
+      // } catch (error) {
+      //   console.log(error);
+      //   Toast.show({
+      //     type: 'error',
+      //     text1: 'message',
+      //     text2: error,
+      //   });
+      //   navigation.navigate('videcall');
+      // }
 
       //   // Create a charge using the token
       //   const chargeResponse = await axios.post(
@@ -97,6 +143,15 @@ const PaymentScreen = () => {
 
   return (
     <View style={styles.container}>
+      <Text
+        style={{
+          textAlign: 'center',
+          paddingBottom: 20,
+          color: colors.girlsRoomColor,
+          fontSize: 24,
+        }}>
+        Pay with Stripe
+      </Text>
       <TextInput
         style={styles.input}
         placeholder="Card Number"
@@ -137,6 +192,7 @@ const styles = StyleSheet.create({
     // alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
+    backgroundColor: '#F5F6E7',
   },
   inputContainer: {
     flexDirection: 'row',

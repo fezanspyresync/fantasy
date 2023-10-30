@@ -92,9 +92,8 @@ const PrivateChat = () => {
   const messageSubmitHandler = async (image = '', video = '') => {
     Keyboard.dismiss();
     // const user = await AsyncStorage.getItem('user');
-
+    setLoading(true);
     if (message || image || video) {
-      setLoading(true);
       const payload = {
         from: route.params.id,
         to: route.params.data.name,
