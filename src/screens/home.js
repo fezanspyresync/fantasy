@@ -9,11 +9,14 @@ import PrivateStack from './privatechatstack';
 import Rooms from './rooms';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore, {firebase} from '@react-native-firebase/firestore';
+import PaymentScreen from './paymentScreen';
+import {useIsFocused} from '@react-navigation/native';
 
 const Tab = createBottomTabNavigator();
 let user = '';
 const Home = () => {
   const [currentPerson, setCurrentPerson] = useState([]);
+  const isFocus = useIsFocused();
   const getCurrentPerson = useCallback(async () => {
     user = await AsyncStorage.getItem('user');
   }, []);
@@ -138,6 +141,7 @@ const Home = () => {
           },
         }}
       />
+
       {/* <Tab.Screen
         name="privatechatStack"
         component={PrivateStack}

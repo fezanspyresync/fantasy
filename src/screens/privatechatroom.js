@@ -35,9 +35,11 @@ import RNFetchBlob from 'react-native-fetch-blob';
 import storage from '@react-native-firebase/storage';
 import {sendFCMMessage} from '../constants/FCM';
 import EmojiSelector, {Categories} from 'react-native-emoji-selector';
+// import {SP_KEY} from '@env';
 
 const PrivateChat = () => {
   // const {name, image, isLive} = route.params;
+  // Alert.alert(SP_KEY);
   const navigation = useNavigation();
   const route = useRoute();
   const [message, setMessage] = useState('');
@@ -90,8 +92,9 @@ const PrivateChat = () => {
   const messageSubmitHandler = async (image = '', video = '') => {
     Keyboard.dismiss();
     // const user = await AsyncStorage.getItem('user');
-    setLoading(true);
+
     if (message || image || video) {
+      setLoading(true);
       const payload = {
         from: route.params.id,
         to: route.params.data.name,
@@ -179,6 +182,8 @@ const PrivateChat = () => {
       setMessage('');
       setVideo('');
       setImage('');
+    } else {
+      setLoading(false);
     }
   };
   const backHandler = () => {

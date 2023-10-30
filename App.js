@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {NavigationContainer} from '@react-navigation/native';
+import {NavigationContainer, useIsFocused} from '@react-navigation/native';
 
 import Splash from './src/screens/splash';
 import Addname from './src/screens/addname';
@@ -15,21 +15,19 @@ import firestore from '@react-native-firebase/firestore';
 import {Alert, AppState} from 'react-native';
 import {Provider, useDispatch, useSelector} from 'react-redux';
 import store from './src/store/store';
-import {isOnline} from './src/store/slice';
 import messaging from '@react-native-firebase/messaging';
 import Toast from 'react-native-toast-message';
 import {requestUserPermission} from './src/constants/FCM';
 import RemotePushController from './src/constants/notification';
 import Girlsroom from './src/screens/girlsrooms';
+import SubscriptionPlans from './src/screens/subscriptionPlans';
+import PaymentScreen from './src/screens/paymentScreen';
+import VideoCall from './src/screens/videoCall';
 
 const Stack = createStackNavigator();
 
 function App() {
   const appState = useRef(AppState.currentState);
-  const [appStateVisible, setAppStateVisible] = useState(appState.current);
-  const dispatch = useDispatch();
-
-  console.log('uashduasdhuadghuasduyasuydgasdgasuygduyasgduyasgu', isOnline);
 
   useEffect(() => {
     const subscription = AppState.addEventListener(
@@ -47,7 +45,6 @@ function App() {
               })
               .then(() => {
                 console.log('User is online!');
-                dispatch(isOnline(true));
               })
               .catch(error => {
                 console.log('error while online');
@@ -67,7 +64,6 @@ function App() {
               })
               .then(() => {
                 console.log('User is offline!');
-                dispatch(isOnline(false));
               })
               .catch(error => {
                 console.log('error while offline');
@@ -79,7 +75,7 @@ function App() {
           console.log('app is killed');
         }
         appState.current = nextAppState;
-        setAppStateVisible(appState.current);
+        // setAppStateVisible(appState.current);
         console.log('AppState', appState.current);
       },
     );
@@ -103,7 +99,7 @@ function App() {
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [appState]);
 
   return (
     <>
@@ -115,8 +111,8 @@ function App() {
             options={{headerShown: false}}
           />
           <Stack.Screen
-            name="addname"
-            component={Addname}
+            name="plan"
+            component={SubscriptionPlans}
             options={{headerShown: false}}
           />
           <Stack.Screen
@@ -130,8 +126,18 @@ function App() {
             options={{headerShown: false}}
           />
           <Stack.Screen
+            name="payment"
+            component={PaymentScreen}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
             name="addgender"
             component={Addgender}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="videcall"
+            component={VideoCall}
             options={{headerShown: false}}
           />
           <Stack.Screen

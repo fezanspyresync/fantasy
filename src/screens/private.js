@@ -85,6 +85,27 @@ const Private = () => {
     navigation.navigate('privateChat', receiverdata);
   };
 
+  useEffect(() => {
+    const handleOnline = async () => {
+      console.log('activeeeeeeeeeeeeeeee');
+      const user = await AsyncStorage.getItem('user');
+      if (user) {
+        firestore()
+          .collection('users')
+          .doc(user)
+          .update({
+            isLive: true,
+          })
+          .then(() => {
+            console.log('User is online!');
+          })
+          .catch(error => {
+            console.log('error while online');
+          });
+      }
+    };
+    handleOnline();
+  }, [isFocus]);
   return (
     <View style={styles.container}>
       {allUsers.length > 0 && (
